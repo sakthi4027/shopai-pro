@@ -170,25 +170,49 @@ export interface ProductSellerOption {
   condition: string;
 }
 
+export interface ProductVariant {
+  name: string;
+  price: number;
+  mrp?: number;
+  sku: string;
+}
+
 export interface ChatProductItem {
   id?: string;
+  product_id?: string;
   name: string;
+  product_name?: string;
   brand?: string;
   model?: string;
   category: string;
+  subcategory?: string;
+  variant?: string;
+  variants?: ProductVariant[];
+  sku?: string;
+  gtin_upc_ean?: string;
   price: number;
+  current_price?: number;
+  mrp?: number;
   original_price?: number;
+  discount_percentage?: number;
   currency?: string;
   rating: number;
   review_count: number;
   availability: string;
   shipping?: string;
+  delivery_info?: string;
+  warranty?: string;
+  return_policy?: string;
+  source_website?: string;
   product_url?: string;
   url?: string;
+  affiliate_url?: string;
   image_url?: string;
   image?: string;
+  images?: string[];
   source?: string;
   seller?: string;
+  seller_rating?: number;
   badge?: string;
   score_overall?: number;
   score_match?: number;
@@ -198,7 +222,7 @@ export interface ChatProductItem {
   recommendation_explanation?: string;
   budget_status?: string;
   budget_note?: string;
-  specifications?: ProductSpec;
+  specifications?: ProductSpec | Record<string, any>;
   sellers?: ProductSellerOption[];
   lowest_price?: number;
   lowest_price_seller?: string;
@@ -217,6 +241,7 @@ export interface ChatMessage {
   conversation_id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  request_id?: string;
   agent_steps?: AgentStep[];
   sources_status?: SourceStatus[];
   products_payload?: ChatProductItem[];

@@ -44,7 +44,7 @@ export const AgentTimeline: React.FC<AgentTimelineProps> = ({
             <Cpu className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 text-sm">Real-Time Multi-Agent Swarm</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Real-Time Shopping AI Agent</h3>
             <p className="text-xs text-slate-500">Autonomous cooperative pipeline with live telemetry</p>
           </div>
         </div>
@@ -55,7 +55,7 @@ export const AgentTimeline: React.FC<AgentTimelineProps> = ({
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 animate-pulse">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Swarm Active
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Shopping AI Active
             </span>
           )}
         </div>

@@ -14,6 +14,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { ChatProductItem, ProductSellerOption } from '../../types';
+import { getSafeProductImage, handleImageError } from '../../utils/imageUtils';
 
 interface ChatProductCardProps {
   product: ChatProductItem;
@@ -84,12 +85,10 @@ export function ChatProductCard({
           {/* Image */}
           <div className="w-full sm:w-28 sm:h-28 shrink-0 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center p-2 overflow-hidden">
             <img
-              src={product.image_url || product.image || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300'}
+              src={getSafeProductImage(product)}
               alt={product.name}
               className="max-h-full max-w-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300';
-              }}
+              onError={(e) => handleImageError(e, product.category, product.subcategory, product.name)}
             />
           </div>
 

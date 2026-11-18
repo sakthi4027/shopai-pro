@@ -224,7 +224,11 @@ async def send_message(
 
     # 5. Update Conversation Memory & Title
     plan = result.get("plan", {})
-    new_constraints = dict(conv.active_constraints or {})
+    if not plan.get("is_follow_up", False):
+        new_constraints = {}
+    else:
+        new_constraints = dict(conv.active_constraints or {})
+
     if plan.get("category"):
         new_constraints["category"] = plan["category"]
     if plan.get("budget_max"):
@@ -283,6 +287,7 @@ async def send_message(
         conversation_id=assistant_msg.conversation_id,
         role=assistant_msg.role,
         content=assistant_msg.content,
+        request_id=req.request_id or str(uuid.uuid4()),
         agent_steps=assistant_msg.agent_steps or [],
         sources_status=assistant_msg.sources_status or [],
         products_payload=assistant_msg.products_payload or [],

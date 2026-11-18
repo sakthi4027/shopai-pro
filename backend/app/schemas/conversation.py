@@ -11,6 +11,7 @@ class CreateConversationRequest(BaseModel):
 class SendMessageRequest(BaseModel):
     content: str = Field(..., min_length=1, description="Natural-language shopping query or follow-up")
     search_mode: Optional[str] = "deep"
+    request_id: Optional[str] = None
 
 
 class MessageResponse(BaseModel):
@@ -18,6 +19,7 @@ class MessageResponse(BaseModel):
     conversation_id: str
     role: str  # "user", "assistant", "system"
     content: str
+    request_id: Optional[str] = None
     agent_steps: List[Dict[str, Any]] = []
     sources_status: List[Dict[str, Any]] = []
     products_payload: List[Dict[str, Any]] = []

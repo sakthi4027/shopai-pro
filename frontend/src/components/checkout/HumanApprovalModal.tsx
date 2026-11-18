@@ -12,6 +12,7 @@ interface HumanApprovalModalProps {
     price: number;
     seller?: string;
     image_url?: string;
+    url?: string;
   };
   onSuccess?: (externalUrl?: string) => void;
 }
@@ -148,6 +149,19 @@ export const HumanApprovalModal: React.FC<HumanApprovalModalProps> = ({
                 <div className="py-2.5 flex justify-between items-center">
                   <span className="text-slate-600">Merchant / Seller</span>
                   <span className="font-medium text-slate-900">{reviewManifest?.seller_name || product.seller}</span>
+                </div>
+                <div className="py-2.5 flex justify-between items-center">
+                  <span className="text-slate-600">Live Merchant Store Link</span>
+                  <a 
+                    href={product.url || reviewManifest?.product_url || 'https://www.amazon.in'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 text-xs truncate max-w-[220px]"
+                    title="Open verified store page"
+                  >
+                    <span>Visit Live Store Page</span>
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                  </a>
                 </div>
                 <div className="py-2.5 flex justify-between items-center">
                   <span className="text-slate-600">Base Price (inclusive of GST)</span>

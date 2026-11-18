@@ -1,6 +1,7 @@
 import re
 from typing import Dict, Any, Optional, List
 from agents.base_agent import AbstractAgent
+from backend.app.catalog.taxonomy import TaxonomyClassifier, TAXONOMY_REGISTRY
 
 
 class ShoppingPlannerAgent(AbstractAgent):
@@ -33,59 +34,105 @@ class ShoppingPlannerAgent(AbstractAgent):
         is_cheapest_seller = bool(re.search(r'\b(cheapest|lowest price|best price|where is this cheapest|where to buy)\b', query, re.IGNORECASE))
         is_best_reviews = bool(re.search(r'\b(best reviews|highest rated|top rated|best ratings)\b', query, re.IGNORECASE))
         
-        # Check if this is a follow-up refinement (e.g. "Only Lenovo", "under 50k", "need 32GB RAM")
-        is_follow_up = bool(previous_constraints) and not is_reset and len(query.split()) <= 8
+        # Check if the query is a genuine refinement vs a new standalone product search
+        is_refinement_pattern = bool(re.search(
+            r'^\s*(?:only\s+|just\s+|show\s+|filter\s+|under\s+|below\s+|less\s+than\s+|more\s+|cheaper\s+|next\s+|with\s+|without\s+|in\s+(?:black|white|blue|grey|silver|gold)|sort\s+by\s+|compare\s+|which\s+one\s+)',
+            query,
+            re.IGNORECASE
+        ))
+        has_new_product_subject = bool(re.search(
+            r'\b(iphones?|samsungs?|galaxys?|laptops?|macbooks?|phones?|smartphones?|shoes?|sneakers?|boots?|dresses?|sarees?|kurtis?|gowns?|skirts?|apparels?|clothings?|chairs?|tables?|desks?|sofas?|tvs?|televisions?|monitors?|earbuds?|headphones?|air\s*fryers?|washing\s*machines?|refrigerators?|drills?|guitars?|cameras?|watch|watches|smartwatches?|perfumes?|serums?|dog\s*food|almonds?|trolley|suitcases?|inverters?)\b',
+            query,
+            re.IGNORECASE
+        ))
+        
+        is_follow_up = bool(previous_constraints) and not is_reset and is_refinement_pattern and not has_new_product_subject
 
         # 1. Budget extraction
         extracted_budget = None
         if custom_budget:
             extracted_budget = float(custom_budget)
         else:
-            # Look for lakh
-            lakh_match = re.search(r'(?:under|below|less than|within|budget of)?\s*(?:₹|rs\.?|inr)?\s*([0-9\.]+)\s*(?:lakh|lac)', query, re.IGNORECASE)
+            q_lower = query.lower()
+            # 1. Lakh (e.g. 1.5 lakh)
+            lakh_match = re.search(r'(?:under|below|less than|within|budget(?:\s*of)?|price(?:\s*is)?|cost|upto|around)?\s*(?:₹|rs\.?|inr)?\s*([0-9\.]+)\s*(?:lakh|lac)', q_lower)
             if lakh_match:
                 extracted_budget = float(lakh_match.group(1)) * 100000.0
             else:
-                # Look for k (e.g. 80k, 5k)
-                k_match = re.search(r'(?:under|below|less than|within|budget of)?\s*(?:₹|rs\.?|inr)?\s*([0-9\.]+)\s*k\b', query, re.IGNORECASE)
+                # 2. 'k' suffix (e.g. 80k, 5k)
+                k_match = re.search(r'(?:under|below|less than|within|budget(?:\s*of)?|price(?:\s*is)?|cost|upto|around)?\s*(?:₹|rs\.?|inr)?\s*([0-9\.]+)\s*k\b', q_lower)
                 if k_match:
                     extracted_budget = float(k_match.group(1)) * 1000.0
                 else:
-                    # Look for raw number
-                    num_match = re.search(r'(?:under|below|less than|within|budget(?:\s*of)?)\s*(?:₹|rs\.?|inr)?\s*([0-9,]{3,7})', query, re.IGNORECASE)
+                    # 3. Explicit keywords: price, budget, under, below, within, upto, around, cost, etc.
+                    num_match = re.search(r'(?:under|below|less than|within|upto|up to|max|maximum|budget|cost|price(?:\s*entry)?(?:\s*is)?(?:\s*:)?(?:\s*=)?|around|near|for|approx|at)\s*(?:₹|rs\.?|inr)?\s*([0-9,]{3,7})\b', q_lower)
                     if num_match:
                         raw_num = num_match.group(1).replace(",", "")
                         try:
                             extracted_budget = float(raw_num)
                         except ValueError:
                             pass
+                    else:
+                        # 4. Currency prefix (e.g. ₹1500, rs 1500)
+                        curr_match = re.search(r'(?:₹|rs\.?|inr)\s*([0-9,]{3,7})\b', q_lower)
+                        if curr_match:
+                            try:
+                                extracted_budget = float(curr_match.group(1).replace(",", ""))
+                            except ValueError:
+                                pass
+                        else:
+                            # 5. Currency suffix (e.g. 1500 rs)
+                            suf_match = re.search(r'\b([0-9,]{3,7})\s*(?:rs|inr|₹|/-|bucks)\b', q_lower)
+                            if suf_match:
+                                try:
+                                    extracted_budget = float(suf_match.group(1).replace(",", ""))
+                                except ValueError:
+                                    pass
+                            else:
+                                # 6. Product noun followed by number (e.g. 'dress 1500')
+                                prod_match = re.search(r'\b(?:dresses?|shoes?|phones?|laptops?|chairs?|earbuds?|watches?|bags?|sarees?|kurtis?)\s+(?:in\s+|for\s+|at\s+)?([0-9,]{3,7})\b', q_lower)
+                                if prod_match:
+                                    try:
+                                        extracted_budget = float(prod_match.group(1).replace(",", ""))
+                                    except ValueError:
+                                        pass
         
         # Inherit previous budget if follow-up and none specified
         if not extracted_budget and is_follow_up and previous_constraints.get("budget_max"):
             extracted_budget = previous_constraints["budget_max"]
-        elif not extracted_budget and user_memory.get("budget_max"):
+        elif not extracted_budget and user_memory.get("budget_max") and is_follow_up:
             extracted_budget = float(user_memory["budget_max"])
 
-        # 2. Category Detection across ALL consumer products
-        category = "general"
-        if re.search(r'\b(laptop|notebook|macbook|thinkpad|gaming pc)\b', query, re.IGNORECASE):
+        # 2. Universal Taxonomy & Category Detection across ALL 17 Categories
+        tax_res = TaxonomyClassifier.classify(query)
+        taxonomy_category = tax_res.get("category", "all")
+        taxonomy_subcategory = tax_res.get("subcategory", "all")
+        
+        category = "all"
+        if re.search(r'\b(laptops?|notebooks?|macbooks?|thinkpads?|gaming\s*pcs?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "laptops":
             category = "laptop"
-        elif re.search(r'\b(phone|smartphone|iphone|android|mobile|galaxy s|pixel)\b', query, re.IGNORECASE):
+        elif re.search(r'\b(phones?|smartphones?|iphones?|androids?|mobiles?|galaxy\s*s\d*|pixels?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "mobile-phones":
             category = "smartphone"
-        elif re.search(r'\b(ssd|hard drive|nvme|hdd|storage drive|thumb drive)\b', query, re.IGNORECASE):
-            category = "storage"
-        elif re.search(r'\b(shoe|shoes|sneaker|sneakers|running shoe|footwear|boots)\b', query, re.IGNORECASE):
+        elif re.search(r'\b(air\s*fryers?|microwaves?|toasters?|kettles?|blenders?|mixers?|cooktops?|chimneys?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "kitchen-appliances":
+            category = "kitchen-appliances"
+        elif re.search(r'\b(washing\s*machines?|refrigerators?|fridges?|air\s*conditioners?|acs?|vacuums?|water\s*purifiers?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "home-appliances":
+            category = "home-appliances"
+        elif re.search(r'\b(shoes?|sneakers?|running\s*shoes?|footwears?|boots?|heels?|sandals?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "footwear":
             category = "footwear"
-        elif re.search(r'\b(washing machine|refrigerator|fridge|microwave|air conditioner|ac|vacuum)\b', query, re.IGNORECASE):
-            category = "appliance"
-        elif re.search(r'\b(headphone|headphones|earphone|earphones|airpod|airpods|earbud|earbuds|speaker)\b', query, re.IGNORECASE):
+        elif re.search(r'\b(dresses?|sarees?|kurtis?|gowns?|skirts?|apparels?|clothings?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "womens-clothing":
+            category = "womens-clothing"
+        elif re.search(r'\b(headphones?|earphones?|airpods?|airdopes?|earbuds?|speakers?|soundbars?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "audio":
             category = "audio"
-        elif re.search(r'\b(monitor|display|screen|tv|television)\b', query, re.IGNORECASE):
+        elif re.search(r'\b(chairs?|office\s*chairs?|desks?|tables?|sofas?|beds?|wardrobes?)\b', query, re.IGNORECASE) or taxonomy_subcategory in ["office-furniture-organization", "furniture"]:
+            category = "office-furniture" if "chair" in query.lower() or "office" in query.lower() else "furniture"
+        elif re.search(r'\b(monitors?|displays?|screens?|tvs?|televisions?)\b', query, re.IGNORECASE) or taxonomy_subcategory == "tv-entertainment":
             category = "monitor"
-        elif re.search(r'\b(watch|smartwatch|fitness tracker|band)\b', query, re.IGNORECASE):
+        elif re.search(r'\b(watch|watches|smartwatches?|fitness\s*trackers?|bands?)\b', query, re.IGNORECASE) or taxonomy_subcategory in ["wearables", "watches"]:
             category = "wearable"
-        elif re.search(r'\b(rtx|gpu|graphics card|cpu|processor|motherboard|ram)\b', query, re.IGNORECASE):
+        elif re.search(r'\b(rtx|gpu|graphics\s*cards?|cpu|processor|motherboard|ram)\b', query, re.IGNORECASE):
             category = "component"
+        elif taxonomy_category and taxonomy_category != "all":
+            category = taxonomy_category
         elif is_follow_up and previous_constraints.get("category"):
             category = previous_constraints["category"]
 
@@ -102,7 +149,7 @@ class ShoppingPlannerAgent(AbstractAgent):
             rf_str = f"{ram_val}GB RAM"
             if rf_str not in required_features:
                 required_features.append(rf_str)
-        elif not required_features and user_memory.get("preferred_ram"):
+        elif not required_features and user_memory.get("preferred_ram") and category in ["laptop", "component", "electronics"]:
             required_features.append(f"{user_memory['preferred_ram']} RAM")
 
         # Storage requirement
@@ -114,7 +161,7 @@ class ShoppingPlannerAgent(AbstractAgent):
             storage_str = storage_match.group(0).upper().strip()
             if storage_str not in required_features:
                 required_features.append(storage_str)
-        elif not any("STORAGE" in f or "SSD" in f or "TB" in f for f in required_features) and user_memory.get("preferred_storage"):
+        elif not any("STORAGE" in f or "SSD" in f or "TB" in f for f in required_features) and user_memory.get("preferred_storage") and category in ["laptop", "component", "electronics"]:
             required_features.append(f"{user_memory['preferred_storage']} Storage")
 
         # GPU / AI Development
@@ -139,13 +186,14 @@ class ShoppingPlannerAgent(AbstractAgent):
             if "High Battery Life (>= 7 hours)" not in preferred_features:
                 preferred_features.append("High Battery Life (>= 7 hours)")
 
-        # Brand preferences: explicit query brands always take precedence over inherited memory
+        # Brand preferences: taxonomy detected brands + explicit query brands
+        explicit_brands = list(tax_res.get("detected_brands", []))
         brands_to_check = [
             "ASUS", "Lenovo", "Dell", "HP", "Apple", "Acer", "MSI", "Samsung", "Sony", 
             "OnePlus", "Xiaomi", "Realme", "Nike", "Adidas", "Puma", "Crucial", "Kingston",
-            "LG", "Whirlpool", "Bosch", "IFB", "Haier"
+            "LG", "Whirlpool", "Bosch", "IFB", "Haier", "Cult.sport", "Minimalist",
+            "70mai", "Happilo", "Green Soul", "Yamaha", "TrustBasket", "Titan", "Luminous"
         ]
-        explicit_brands = []
         for b in brands_to_check:
             if re.search(rf'\b{b}\b', query, re.IGNORECASE):
                 if b not in explicit_brands:
@@ -155,7 +203,7 @@ class ShoppingPlannerAgent(AbstractAgent):
             preferred_brands = explicit_brands
         elif is_follow_up and previous_constraints.get("preferred_brands"):
             preferred_brands = list(previous_constraints["preferred_brands"])
-        elif user_memory.get("preferred_brands"):
+        elif user_memory.get("preferred_brands") and category in ["laptop", "electronics", "component"] and is_follow_up:
             preferred_brands = list(user_memory["preferred_brands"])
         else:
             preferred_brands = []
@@ -182,6 +230,8 @@ class ShoppingPlannerAgent(AbstractAgent):
 
         output_plan = {
             "category": category,
+            "taxonomy_category": taxonomy_category,
+            "taxonomy_subcategory": taxonomy_subcategory,
             "budget_max": extracted_budget,
             "required_features": required_features,
             "preferred_features": preferred_features,

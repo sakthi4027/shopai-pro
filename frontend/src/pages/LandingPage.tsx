@@ -33,18 +33,18 @@ export const LandingPage: React.FC = () => {
       <section className="text-center max-w-4xl mx-auto px-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold mb-6 shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-          Autonomous 10-Agent Swarm Intelligence
+          Autonomous Shopping AI Agent Intelligence
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-6">
-          The Intelligent Shopping Swarm That{' '}
+          The Intelligent Shopping AI Agent That{' '}
           <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 bg-clip-text text-transparent">
             Thinks, Verifies & Compares
           </span>
         </h1>
 
         <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
-          Tell our AI swarm what you need in plain English. Ten specialized agents dissect hardware specs, search live merchant sources, audit customer reviews, track price trends, and rank recommendations — with strict human approval before purchase.
+          Tell our Shopping AI Agent what you need in plain English. Specialized AI models dissect hardware specs, search live merchant sources, audit customer reviews, track price trends, and rank recommendations — with strict human approval before purchase.
         </p>
 
         {/* Big Search Input */}
@@ -184,6 +184,35 @@ export const LandingPage: React.FC = () => {
               <button className="flex-1 py-2 bg-slate-700 text-slate-300 rounded-lg text-center font-semibold">Cancel</button>
               <button className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-center font-semibold">Confirm</button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Primary CTA Section */}
+      <section className="max-w-4xl mx-auto px-4 text-center py-12">
+        <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 border border-indigo-100/80 rounded-3xl p-8 sm:p-12 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto mb-4 shadow-md shadow-indigo-200">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-3">
+            Ready to Shop with Autonomous AI Intelligence?
+          </h2>
+          <p className="text-sm text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed">
+            Create your isolated workspace to access personalized multi-agent searches, cross-merchant price history, authenticated bookmarks, and live discount alerts.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to="/register"
+              className="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+            >
+              Get Started Free <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/login"
+              className="w-full sm:w-auto px-8 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+            >
+              Sign In to Account
+            </Link>
           </div>
         </div>
       </section>

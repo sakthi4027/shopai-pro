@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # LLM Providers
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", "")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY", "")
+    GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
     
     # Live Search APIs (Optional - live web scraper runs with or without keys)
     SERPAPI_API_KEY: Optional[str] = os.getenv("SERPAPI_API_KEY", "")

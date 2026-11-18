@@ -1,29 +1,41 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bot, LogIn, Loader2, AlertCircle } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Bot, LogIn, Loader2, AlertCircle, KeyRound, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('demo@ecommerce-ai.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      setError('Please enter your email and password');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       await login(email, password);
-      navigate('/search');
+      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Login failed. Please verify your credentials.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuickFill = (testEmail: string, testPass: string) => {
+    setEmail(testEmail);
+    setPassword(testPass);
+    setError(null);
   };
 
   return (
@@ -53,7 +65,7 @@ export const LoginPage: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
-              placeholder="demo@ecommerce-ai.com"
+              placeholder="you@example.com"
             />
           </div>
 
@@ -78,6 +90,29 @@ export const LoginPage: React.FC = () => {
             Sign In
           </button>
         </form>
+
+        {/* Quick Test Accounts for Instant Verification */}
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <p className="text-[11px] font-semibold text-slate-500 mb-2 text-center">Quick Test Accounts:</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickFill('karthik@shopaipro.com', 'karthik123')}
+              className="py-1.5 px-2 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg text-[11px] font-medium text-slate-700 hover:text-indigo-700 transition-colors flex items-center justify-center gap-1"
+            >
+              <UserCheck className="w-3 h-3 text-indigo-600" />
+              <span>Karthik (User A)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('demo@ecommerce-ai.com', 'password123')}
+              className="py-1.5 px-2 bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-200 rounded-lg text-[11px] font-medium text-slate-700 hover:text-purple-700 transition-colors flex items-center justify-center gap-1"
+            >
+              <UserCheck className="w-3 h-3 text-purple-600" />
+              <span>Alex (User B)</span>
+            </button>
+          </div>
+        </div>
 
         <div className="mt-6 pt-6 border-t border-slate-100 text-center text-xs text-slate-500">
           Don't have an account?{' '}

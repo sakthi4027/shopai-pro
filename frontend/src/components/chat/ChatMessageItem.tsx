@@ -5,6 +5,7 @@ import { ThinkingAccordion } from './ThinkingAccordion';
 import { SourceTransparencyBadge } from './SourceTransparencyBadge';
 import { ChatProductCard } from './ChatProductCard';
 import { ChatComparisonMatrix } from './ChatComparisonMatrix';
+import { MarkdownContent } from './MarkdownContent';
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -76,22 +77,9 @@ export function ChatMessageItem({
             <SourceTransparencyBadge sources={message.sources_status} />
           )}
 
-          {/* Assistant Text Content / Markdown */}
-          <div className="text-sm text-slate-800 leading-relaxed space-y-3 prose-sm max-w-none">
-            {message.content.split('\n\n').map((paragraph, pIdx) => {
-              if (paragraph.startsWith('### ')) {
-                return (
-                  <h4 key={pIdx} className="text-base font-bold text-slate-900 mt-4 mb-1">
-                    {paragraph.replace('### ', '')}
-                  </h4>
-                );
-              }
-              return (
-                <p key={pIdx} className="leading-relaxed">
-                  {paragraph}
-                </p>
-              );
-            })}
+          {/* Assistant Text Content / Interactive Markdown */}
+          <div className="text-sm text-slate-800 leading-relaxed max-w-none">
+            <MarkdownContent content={message.content} />
           </div>
 
           {/* Embedded Product Result Cards */}

@@ -1,4 +1,4 @@
-# 🛒 Antigravity ShopAI: Multi-Agent Shopping Assistant
+# ShopAI: Multi-Agent Shopping Assistant
 
 A production-grade, enterprise-ready **AI E-Commerce Multi-Agent Shopping Assistant** platform.
 

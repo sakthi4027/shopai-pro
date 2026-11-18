@@ -22,17 +22,30 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navLinks = [
+  const authenticatedNavLinks = [
+    { to: '/dashboard', label: 'ShopAI Pro', icon: Bot },
     { to: '/search', label: 'AI Search', icon: Search },
-    { to: '/recommendations', label: 'Recommendations', icon: Award },
     { to: '/compare', label: 'Compare', icon: Layers },
-    { to: '/prices', label: 'Price Intel', icon: TrendingDown },
-    { to: '/saved', label: 'Saved', icon: Bookmark },
-    { to: '/alerts', label: 'Alerts', icon: Bell },
+    { to: '/saved', label: 'Watchlist', icon: Bookmark },
+    { to: '/alerts', label: 'Price Alerts', icon: Bell },
+    { to: '/history', label: 'History', icon: Clock },
     { to: '/agents', label: 'Agent Activity', icon: Activity },
   ];
 
+  const publicNavLinks = [
+    { to: '/', label: 'Overview', icon: Bot },
+    { to: '/search', label: 'Product Search', icon: Search },
+    { to: '/compare', label: 'Comparison Engine', icon: Layers },
+  ];
+
+  const navLinks = user ? authenticatedNavLinks : publicNavLinks;
+
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
@@ -45,10 +58,10 @@ export const Navbar: React.FC = () => {
             </div>
             <div>
               <span className="text-lg font-bold bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">
-                Antigravity ShopAI
+                Shopping AI Agent
               </span>
               <span className="block text-[10px] uppercase tracking-wider font-semibold text-indigo-600 -mt-1">
-                Multi-Agent Swarm
+                Autonomous Intelligent Commerce
               </span>
             </div>
           </Link>
@@ -91,10 +104,7 @@ export const Navbar: React.FC = () => {
                   <span className="block text-[10px] text-slate-500 font-medium">Isolated Workspace</span>
                 </div>
                 <button
-                  onClick={() => {
-                    logout();
-                    navigate('/login');
-                  }}
+                  onClick={handleLogout}
                   className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   title="Sign Out"
                 >

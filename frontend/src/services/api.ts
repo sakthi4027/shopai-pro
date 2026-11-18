@@ -263,11 +263,11 @@ export const api = {
     }
   },
 
-  async sendChatMessage(id: string, content: string, search_mode?: string): Promise<ChatMessage> {
+  async sendChatMessage(id: string, content: string, search_mode?: string, request_id?: string): Promise<ChatMessage> {
     const res = await fetch(`${API_BASE}/conversations/${id}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({ content, search_mode })
+      body: JSON.stringify({ content, search_mode, request_id })
     });
     return handleResponse(res);
   },

@@ -31,20 +31,23 @@ class ProductTrustAgent(AbstractAgent):
             specs = p.get("specifications", {})
             seller = p.get("seller", "")
             brand = p.get("brand", "")
+            cat = (p.get("category") or "").lower()
+            subcat = (p.get("subcategory") or "").lower()
+            is_computer = (cat in ["electronics", "laptop", "computers"]) and (subcat in ["laptops", "computers", "pc-components", "general"])
 
             # 1. Suspiciously low price detection (e.g. claiming RTX 4090 or 32GB RAM under ₹30,000)
             if price < 35000 and ("RTX" in str(specs.get("gpu", "")) or specs.get("ram_gb", 0) >= 32):
                 trust_score -= 0.5
                 warnings.append("⚠️ Suspiciously low price for advertised flagship hardware. High risk of counterfeit or misrepresented components.")
 
-            # 2. Extreme discount claim check (> 75% discount is often a bait-and-switch)
-            if orig_price > 0 and ((orig_price - price) / orig_price) > 0.70:
+            # 2. Extreme discount claim check (> 80% discount is often a bait-and-switch)
+            if orig_price > 0 and ((orig_price - price) / orig_price) > 0.80:
                 trust_score -= 0.2
-                warnings.append("⚠️ Excessive discount claim (>70% off) could indicate artificial MSRP inflation or bait-and-switch pricing.")
+                warnings.append("⚠️ Excessive discount claim (>80% off) could indicate artificial MSRP inflation or bait-and-switch pricing.")
 
-            # 3. Missing or zero warranty
-            if specs.get("warranty_months", 0) <= 0:
-                trust_score -= 0.25
+            # 3. Missing or zero warranty (for electronics/appliances)
+            if cat in ["electronics", "home-furniture", "appliances"] and specs.get("warranty_months", 0) <= 0:
+                trust_score -= 0.15
                 warnings.append("⚠️ No official manufacturer warranty declared or unclear warranty terms.")
 
             # 4. Unverified Seller / Shady domain
@@ -52,8 +55,8 @@ class ProductTrustAgent(AbstractAgent):
                 trust_score -= 0.4
                 warnings.append("⚠️ Seller or manufacturer is unverified. ⚠️ Information could not be independently verified.")
 
-            # 5. Missing critical specifications
-            if not specs.get("cpu") or not specs.get("ram_gb"):
+            # 5. Missing critical specifications for computing devices
+            if is_computer and (not specs.get("cpu") or not specs.get("ram_gb")):
                 trust_score -= 0.2
                 warnings.append("⚠️ Key hardware specifications are missing from the listing.")
 

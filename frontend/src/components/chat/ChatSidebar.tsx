@@ -52,7 +52,7 @@ export function ChatSidebar({
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white tracking-tight">Antigravity AI</h1>
+            <h1 className="text-sm font-bold text-white tracking-tight">Shopping AI Agent</h1>
             <p className="text-[11px] text-slate-400">Deep Shopping Intelligence</p>
           </div>
         </div>
